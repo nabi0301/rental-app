@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                {% if current_user.profile_picture %}
+                    <img src="{{ url_for('static', filename='uploads/' + current_user.profile_picture) }}" class="card-img-top" alt="Profile Picture" style="width: 150px; height: 150px; object-fit: cover;">
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/default_profile.png') }}" class="card-img-top" alt="Default Profile Picture" style="width: 150px; height: 150px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ current_user.first_name }} {{ current_user.last_name }}</h5>
+                    <p class="card-text">{{ current_user.bio }}</p>
+                    <a href="{{ url_for('main.edit_profile') }}" class="btn btn-primary">Edit Profile</a>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Contact Information</h5>
+                    <ul class="list-unstyled">
+                        <li><strong>Email:</strong> {{ current_user.email }}</li>
+                        <li><strong>Member since:</strong> {{ current_user.created_at.strftime('%B %d, %Y') }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            {% if current_user.is_landlord %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">My Properties</h5>
+                            <a href="{{ url_for('main.add_property') }}" class="btn btn-primary">Add New Property</a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Price</th>
+                                        <th>Status</th>
+                                        <th>Applications</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for property in properties %}
+                                        <tr>
+                                            <td>{{ property.title }}</td>
+                                            <td>${{ property.price }}/month</td>
+                                            <td>
+                                                <span class="badge {% if property.is_available %}bg-success{% else %}bg-danger{% endif %}">
+                                                    {{ 'Available' if property.is_available else 'Rented' }}
+                                                </span>
+                                            </td>
+                                            <td>{{ property.applications|length }}</td>
+                                            <td>
+                                                <a href="{{ url_for('main.property_details', property_id=property.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">View</a>
+                                                <a href="{{ url_for('main.edit_property', property_id=property.id) }}" 
+                                                   class="btn btn-sm btn-outline-secondary">Edit</a>
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5" class="text-center">No properties listed yet.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Recent Applications</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Property</th>
+                                        <th>Applicant</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for application in received_applications %}
+                                        <tr>
+                                            <td>{{ application.property.title }}</td>
+                                            <td>{{ application.applicant.username }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ {'pending': 'warning', 'approved': 'success', 'rejected': 'danger'}[application.status] }}">
+                                                    {{ application.status.title() }}
+                                                </span>
+                                            </td>
+                                            <td>{{ application.created_at.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#applicationModal{{ application.id }}">
+                                                        View
+                                                    </button>
+                                                    {% if application.status == 'pending' %}
+                                                        <form action="{{ url_for('main.update_application_status', application_id=application.id) }}" 
+                                                              method="post" class="d-inline">
+                                                            <input type="hidden" name="status" value="approved">
+                                                            <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                                        </form>
+                                                        <form action="{{ url_for('main.update_application_status', application_id=application.id) }}" 
+                                                              method="post" class="d-inline">
+                                                            <input type="hidden" name="status" value="rejected">
+                                                            <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                                        </form>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5" class="text-center">No applications received yet.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">My Applications</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Property</th>
+                                        <th>Status</th>
+                                        <th>Applied On</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for application in applications %}
+                                        <tr>
+                                            <td>{{ application.property.title }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ {'pending': 'warning', 'approved': 'success', 'rejected': 'danger'}[application.status] }}">
+                                                    {{ application.status.title() }}
+                                                </span>
+                                            </td>
+                                            <td>{{ application.created_at.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#applicationModal{{ application.id }}">
+                                                    View Details
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center">No applications submitted yet.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Saved Properties</h5>
+                        <div class="row row-cols-1 row-cols-md-2 g-4">
+                            {% for property in saved_properties %}
+                                <div class="col">
+                                    <div class="card h-100">
+                                        <img src="{{ property.image_url or url_for('static', filename='images/placeholder.jpg') }}" 
+                                             class="card-img-top" alt="{{ property.title }}">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ property.title }}</h5>
+                                            <p class="card-text">
+                                                <strong>Price:</strong> ${{ property.price }}/month<br>
+                                                <strong>Location:</strong> {{ property.address }}
+                                            </p>
+                                            <a href="{{ url_for('main.property_details', property_id=property.id) }}" 
+                                               class="btn btn-primary">View Details</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="col-12">
+                                    <p class="text-center">No properties saved yet.</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('main.update_profile') }}" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               value="{{ current_user.username }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ current_user.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="avatar" class="form-label">Profile Picture</label>
+                        <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Application Details Modals -->
+{% for application in applications %}
+    <div class="modal fade" id="applicationModal{{ application.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Application Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Property: {{ application.property.title }}</h6>
+                    <p><strong>Status:</strong> {{ application.status.title() }}</p>
+                    <p><strong>Applied on:</strong> {{ application.created_at.strftime('%B %d, %Y') }}</p>
+                    <p><strong>Monthly Income:</strong> ${{ application.monthly_income }}</p>
+                    <p><strong>Employment Status:</strong> {{ application.employment_status.replace('_', ' ').title() }}</p>
+                    <p><strong>Message:</strong></p>
+                    <p class="border p-2 rounded">{{ application.message }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+{% endblock %}

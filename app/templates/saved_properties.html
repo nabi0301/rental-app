@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Saved Properties{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Saved Properties</h1>
+    
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for property in properties %}
+            <div class="col">
+                <div class="card property-card h-100">
+                    <img src="{{ property.image_url or url_for('static', filename='images/placeholder.jpg') }}" 
+                         class="card-img-top" alt="{{ property.title }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ property.title }}</h5>
+                        <p class="card-text">{{ property.description[:100] }}...</p>
+                        <p class="card-text">
+                            <strong>Price:</strong> ${{ property.price }}/month<br>
+                            <strong>Location:</strong> {{ property.address }}<br>
+                            <strong>Bedrooms:</strong> {{ property.bedrooms }}<br>
+                            <strong>Bathrooms:</strong> {{ property.bathrooms }}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('main.property_details', property_id=property.id) }}" 
+                               class="btn btn-primary">View Details</a>
+                            <form action="{{ url_for('main.save_property', property_id=property.id) }}" 
+                                  method="post" class="d-inline">
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="fas fa-heart"></i> Remove
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    You haven't saved any properties yet.
+                    <a href="{{ url_for('main.properties') }}" class="alert-link">Browse properties</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

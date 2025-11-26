@@ -1,0 +1,77 @@
+/* Global Styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Property Card Styles */
+.property-card {
+    transition: transform 0.2s;
+    height: 100%;
+}
+
+.property-card:hover {
+    transform: translateY(-5px);
+}
+
+.property-card img {
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Property Image Gallery */
+.carousel-item img.property-details {
+    height: 500px;
+    object-fit: cover;
+}
+
+.thumbnail-gallery {
+    margin-top: 10px;
+}
+
+.thumbnail-gallery img {
+    height: 80px;
+    object-fit: cover;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.thumbnail-gallery img:hover {
+    opacity: 0.8;
+}
+
+/* Image Modal */
+.modal-xl .modal-body {
+    padding: 0;
+}
+
+.modal-xl .modal-body img {
+    max-height: 90vh;
+    object-fit: contain;
+}
+
+/* Form Styles */
+.form-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Property Details */
+.property-details img {
+    max-height: 400px;
+    object-fit: cover;
+}
+
+/* Profile Page */
+.profile-section {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}

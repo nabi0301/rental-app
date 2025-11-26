@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}{{ property.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.properties') }}">Properties</a></li>
+            <li class="breadcrumb-item active">{{ property.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                {% if property.images %}
+                    <div id="propertyImageCarousel" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-indicators">
+                            {% for image in property.images %}
+                                <button type="button" data-bs-target="#propertyImageCarousel" 
+                                        data-bs-slide-to="{{ loop.index0 }}" 
+                                        class="{{ 'active' if loop.first else '' }}"
+                                        aria-current="{{ 'true' if loop.first else 'false' }}"
+                                        aria-label="Slide {{ loop.index }}"></button>
+                            {% endfor %}
+                        </div>
+                        <div class="carousel-inner">
+                            {% for image in property.images %}
+                                <div class="carousel-item {{ 'active' if loop.first else '' }}">
+                                    <img src="{{ image.url }}" class="d-block w-100 property-details" 
+                                         alt="{{ property.title }} - Image {{ loop.index }}"
+                                         data-bs-toggle="modal" data-bs-target="#imageModal{{ loop.index }}"
+                                         style="cursor: pointer;">
+                                    {% if image.caption %}
+                                        <div class="carousel-caption d-none d-md-block">
+                                            <p>{{ image.caption }}</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if property.images|length > 1 %}
+                            <button class="carousel-control-prev" type="button" data-bs-target="#propertyImageCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#propertyImageCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                        {% endif %}
+                    </div>
+
+                    <!-- Thumbnail Gallery -->
+                    <div class="row mt-2">
+                        {% for image in property.images %}
+                            <div class="col-3 col-md-2 mb-2">
+                                <img src="{{ image.url }}" class="img-thumbnail" 
+                                     alt="Thumbnail {{ loop.index }}"
+                                     onclick="$('#propertyImageCarousel').carousel({{ loop.index0 }})"
+                                     style="cursor: pointer;">
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Image Modals for Full-Size View -->
+                    {% for image in property.images %}
+                        <div class="modal fade" id="imageModal{{ loop.index }}" tabindex="-1">
+                            <div class="modal-dialog modal-xl">
+                                <div class="modal-content">
+                                    <div class="modal-body p-0">
+                                        <img src="{{ image.url }}" class="img-fluid w-100" 
+                                             alt="{{ property.title }} - Image {{ loop.index }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/placeholder.jpg') }}" 
+                         class="card-img-top property-details" alt="{{ property.title }}">
+                {% endif %}
+                <div class="card-body">
+                    <h1 class="card-title">{{ property.title }}</h1>
+                    <p class="text-muted">
+                        <i class="fas fa-map-marker-alt"></i> {{ property.address }}
+                    </p>
+                    <hr>
+                    <div class="row mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-bed"></i>
+                                <p class="mb-0">{{ property.bedrooms }} Bedrooms</p>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-bath"></i>
+                                <p class="mb-0">{{ property.bathrooms }} Bathrooms</p>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-calendar-alt"></i>
+                                <p class="mb-0">Available {{ property.available_from.strftime('%B %d, %Y') }}</p>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-dollar-sign"></i>
+                                <p class="mb-0">${{ property.price }}/month</p>
+                            </div>
+                        </div>
+                    </div>
+                    <h4>Description</h4>
+                    <p class="card-text">{{ property.description }}</p>
+
+                    <!-- Reviews Section -->
+                    <div class="mt-4">
+                        <h4>Reviews</h4>
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="h2 mb-0">{{ "%.1f"|format(property.average_rating) }}</div>
+                                <div class="ms-2">
+                                    {% for i in range(5) %}
+                                        <i class="fas fa-star {% if i < property.average_rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                    {% endfor %}
+                                    <div class="text-muted">{{ property.reviews|length }} reviews</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if current_user.is_authenticated and not current_user.is_landlord %}
+                            {% set user_review = property.reviews|selectattr("user_id", "equalto", current_user.id)|first %}
+                            {% if not user_review %}
+                                <form action="{{ url_for('main.add_review', property_id=property.id) }}" method="post" class="mb-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Rating</label>
+                                        <div class="rating">
+                                            {% for i in range(5, 0, -1) %}
+                                                <input type="radio" name="rating" value="{{ i }}" id="rating{{ i }}" required>
+                                                <label for="rating{{ i }}">☆</label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="comment" class="form-label">Review</label>
+                                        <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+
+                        <div class="review-list">
+                            {% for review in property.reviews|sort(attribute='created_at', reverse=true) %}
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h6 class="mb-0">{{ review.user.username }}</h6>
+                                                <div class="text-warning">
+                                                    {% for i in range(5) %}
+                                                        <i class="fas fa-star {% if i < review.rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">{{ review.created_at.strftime('%Y-%m-%d') }}</small>
+                                        </div>
+                                        <p class="mt-2 mb-0">{{ review.comment }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title">Contact Landlord</h4>
+                    {% if current_user.is_authenticated %}
+                        {% if not current_user.is_landlord %}
+                            {% if not application %}
+                                <form action="{{ url_for('main.apply_property', property_id=property.id) }}" method="post">
+                                    <div class="mb-3">
+                                        <label for="message" class="form-label">Message</label>
+                                        <textarea class="form-control" id="message" name="message" rows="3" 
+                                                  required></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="monthly_income" class="form-label">Monthly Income ($)</label>
+                                        <input type="number" class="form-control" id="monthly_income" 
+                                               name="monthly_income" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="employment_status" class="form-label">Employment Status</label>
+                                        <select class="form-select" id="employment_status" name="employment_status" required>
+                                            <option value="full_time">Full Time</option>
+                                            <option value="part_time">Part Time</option>
+                                            <option value="self_employed">Self Employed</option>
+                                            <option value="student">Student</option>
+                                            <option value="unemployed">Unemployed</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">Submit Application</button>
+                                </form>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    You have already applied for this property.
+                                    <br>
+                                    Status: <strong>{{ application.status }}</strong>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-warning">
+                                As a landlord, you cannot apply for properties.
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            Please <a href="{{ url_for('auth.login') }}">login</a> to apply for this property.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Property Details</h4>
+                    <ul class="list-unstyled">
+                        <li><strong>Listed by:</strong> {{ property.owner.username }}</li>
+                        <li><strong>Listed on:</strong> {{ property.created_at.strftime('%B %d, %Y') }}</li>
+                        <li><strong>Property ID:</strong> {{ property.id }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

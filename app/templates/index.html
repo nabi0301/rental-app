@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="jumbotron text-center py-5 bg-light">
+    <h1 class="display-4">Welcome to Rental App</h1>
+    <p class="lead">Find your perfect rental property or list your properties for rent.</p>
+    <hr class="my-4">
+    <p>Browse through our available properties or create an account to start your journey.</p>
+    {% if not current_user.is_authenticated %}
+        <div class="mt-4">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg me-2">Get Started</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg">Login</a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Featured Properties</h2>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for property in featured_properties %}
+            <div class="col">
+                <div class="card property-card">
+                    <img src="{{ property.image_url or url_for('static', filename='images/placeholder.jpg') }}" 
+                         class="card-img-top" alt="{{ property.title }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ property.title }}</h5>
+                        <p class="card-text">{{ property.description[:150] }}...</p>
+                        <p class="card-text">
+                            <strong>Price:</strong> ${{ property.price }}/month<br>
+                            <strong>Location:</strong> {{ property.address }}
+                        </p>
+                        <a href="{{ url_for('main.property_details', property_id=property.id) }}" 
+                           class="btn btn-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="text-center p-3">
+                <i class="fas fa-search fa-3x mb-3"></i>
+                <h3>Easy Search</h3>
+                <p>Find properties that match your criteria with our advanced search filters.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center p-3">
+                <i class="fas fa-home fa-3x mb-3"></i>
+                <h3>Quality Listings</h3>
+                <p>Browse through verified property listings from trusted landlords.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center p-3">
+                <i class="fas fa-file-signature fa-3x mb-3"></i>
+                <h3>Easy Application</h3>
+                <p>Apply for properties with our streamlined application process.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

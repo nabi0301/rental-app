@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Properties{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Available Properties</h1>
+        </div>
+        <div class="col-md-4">
+            <form class="d-flex" action="{{ url_for('main.properties') }}" method="get">
+                <input class="form-control me-2" type="search" name="q" placeholder="Search properties..." 
+                       value="{{ request.args.get('q', '') }}">
+                <button class="btn btn-outline-primary" type="submit">Search</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Filters</h5>
+                    <form action="{{ url_for('main.properties') }}" method="get">
+                        <div class="mb-3">
+                            <label class="form-label">Price Range</label>
+                            <div class="d-flex gap-2">
+                                <input type="number" class="form-control" name="min_price" 
+                                       placeholder="Min" value="{{ request.args.get('min_price', '') }}">
+                                <input type="number" class="form-control" name="max_price" 
+                                       placeholder="Max" value="{{ request.args.get('max_price', '') }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bedrooms</label>
+                            <select class="form-select" name="bedrooms">
+                                <option value="">Any</option>
+                                {% for i in range(1, 6) %}
+                                    <option value="{{ i }}" 
+                                            {% if request.args.get('bedrooms')|int == i %}selected{% endif %}>
+                                        {{ i }}+
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bathrooms</label>
+                            <select class="form-select" name="bathrooms">
+                                <option value="">Any</option>
+                                {% for i in range(1, 4) %}
+                                    <option value="{{ i }}" 
+                                            {% if request.args.get('bathrooms')|int == i %}selected{% endif %}>
+                                        {{ i }}+
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Property Type</label>
+                            <select class="form-select" name="property_type">
+                                <option value="">Any Type</option>
+                                {% for type in property_types %}
+                                    <option value="{{ type }}" 
+                                            {% if request.args.get('property_type') == type %}selected{% endif %}>
+                                        {{ type.replace('_', ' ').title() }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" class="form-control mb-2" name="neighborhood" 
+                                   placeholder="Neighborhood" value="{{ request.args.get('neighborhood', '') }}">
+                            
+                            <label class="form-label mt-2">Distance Search</label>
+                            <div class="input-group mb-2">
+                                <input type="number" class="form-control" name="radius" 
+                                       placeholder="Miles" value="{{ request.args.get('radius', '') }}">
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="getUserLocation()">
+                                    <i class="fas fa-location-arrow"></i> Use My Location
+                                </button>
+                            </div>
+                            <input type="hidden" name="search_lat" id="search_lat" 
+                                   value="{{ request.args.get('search_lat', '') }}">
+                            <input type="hidden" name="search_lng" id="search_lng" 
+                                   value="{{ request.args.get('search_lng', '') }}">
+                            
+                            <div id="searchMap" style="height: 200px; margin-top: 10px;" class="mb-2"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Amenities</label>
+                            <div class="row">
+                                {% for amenity in amenities %}
+                                    <div class="col-6">
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" 
+                                                   id="filter_amenity_{{ loop.index }}" 
+                                                   name="amenities[]" 
+                                                   value="{{ amenity }}"
+                                                   {% if amenity in request.args.getlist('amenities[]') %}checked{% endif %}>
+                                            <label class="form-check-label" for="filter_amenity_{{ loop.index }}">
+                                                {{ amenity.replace('_', ' ').title() }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                {% for property in properties %}
+                    <div class="col">
+                        <div class="card property-card h-100">
+                            <img src="{{ property.image_url or url_for('static', filename='images/placeholder.jpg') }}" 
+                                 class="card-img-top" alt="{{ property.title }}">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ property.title }}</h5>
+                                <p class="card-text">{{ property.description[:100] }}...</p>
+                                <p class="card-text">
+                                    <strong>Price:</strong> ${{ property.price }}/month<br>
+                                    <strong>Location:</strong> {{ property.address }}<br>
+                                    <strong>Bedrooms:</strong> {{ property.bedrooms }}<br>
+                                    <strong>Bathrooms:</strong> {{ property.bathrooms }}
+                                </p>
+                                <a href="{{ url_for('main.property_details', property_id=property.id) }}" 
+                                   class="btn btn-primary">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            No properties found matching your criteria.
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if pagination %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% for page in pagination.iter_pages() %}
+                        {% if page %}
+                            <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('main.properties', page=page, **request.args) }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

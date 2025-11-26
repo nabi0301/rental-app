@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Conversations List -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Conversations</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for conversation in conversations %}
+                        {% set other_user = conversation.sender if conversation.sender_id != current_user.id else conversation.receiver %}
+                        <a href="{{ url_for('main.messages', user_id=other_user.id) }}" 
+                           class="list-group-item list-group-item-action {% if other_user.id == selected_user.id %}active{% endif %}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ other_user.username }}</h6>
+                                {% if conversation.property %}
+                                    <small>Re: {{ conversation.property.title }}</small>
+                                {% endif %}
+                            </div>
+                            <p class="mb-1 text-truncate">{{ conversation.content }}</p>
+                            <small>{{ conversation.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            {% if not conversation.is_read and conversation.receiver_id == current_user.id %}
+                                <span class="badge bg-primary float-end">New</span>
+                            {% endif %}
+                        </a>
+                    {% else %}
+                        <div class="list-group-item">
+                            <p class="mb-0">No conversations yet</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Thread -->
+        <div class="col-md-8">
+            {% if selected_user %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            Conversation with {{ selected_user.username }}
+                            {% if property %}
+                                about <a href="{{ url_for('main.property_details', property_id=property.id) }}">
+                                    {{ property.title }}
+                                </a>
+                            {% endif %}
+                        </h5>
+                    </div>
+                    <div class="card-body" id="messageThread" style="height: 400px; overflow-y: auto;">
+                        {% for message in messages %}
+                            <div class="mb-3 {% if message.sender_id == current_user.id %}text-end{% endif %}">
+                                <div class="d-inline-block p-2 rounded {% if message.sender_id == current_user.id %}bg-primary text-white{% else %}bg-light{% endif %}" 
+                                     style="max-width: 75%;">
+                                    {{ message.content }}
+                                    <div class="small {% if message.sender_id == current_user.id %}text-white-50{% else %}text-muted{% endif %}">
+                                        {{ message.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-muted">No messages yet</p>
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer">
+                        <form action="{{ url_for('main.send_message', receiver_id=selected_user.id) }}" method="post">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="content" placeholder="Type your message..." required>
+                                {% if property %}
+                                    <input type="hidden" name="property_id" value="{{ property.id }}">
+                                {% endif %}
+                                <button type="submit" class="btn btn-primary">Send</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center">
+                        <p class="mb-0">Select a conversation to view messages</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Scroll to bottom of message thread
+    const messageThread = document.getElementById('messageThread');
+    if (messageThread) {
+        messageThread.scrollTop = messageThread.scrollHeight;
+    }
+
+    // Auto refresh messages every 30 seconds
+    setInterval(() => {
+        if (messageThread) {
+            location.reload();
+        }
+    }, 30000);
+</script>
+{% endblock %}
+{% endblock %}
