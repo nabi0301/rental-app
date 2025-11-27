@@ -5,6 +5,12 @@ body {
     flex-direction: column;
 }
 
+/* Force project-wide font color to white for better contrast */
+/* Use a strong selector and !important sparingly to override inline or library styles */
+body, body * {
+    color: #ffffff !important;
+}
+
 main {
     flex: 1;
 }
