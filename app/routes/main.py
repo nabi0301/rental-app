@@ -19,6 +19,12 @@ def index():
     featured_properties = Property.query.filter_by(is_available=True).order_by(Property.created_at.desc()).limit(6).all()
     return render_template('index.html', featured_properties=featured_properties)
 
+
+@main.route('/portfolio')
+def portfolio():
+    """Render the personal portfolio page."""
+    return render_template('portfolio.html')
+
 @main.route('/profile')
 @login_required
 def profile():
